@@ -7,14 +7,14 @@ const prisma = new PrismaClient()
 async function main() {
   const hashPassword = await argon2.hash('admin@123')
   const admin = await prisma.user.upsert({
-    where: { email: 'thinh221201@gmail.com' },
+    where: { email: 'thieutrancuong.log@gmail.com' },
     update: {},
     create: {
-      email: 'thinh221201@gmail.com',
+      email: 'thieutrancuong.log@gmail.com',
       password: hashPassword,
       role_user: 'ADMIN',
-      first_name: 'Thinh',
-      last_name: 'Tran',
+      first_name: 'Cuong',
+      last_name: 'Thieu',
       email_verified: new Date(),
     },
   })
