@@ -1,0 +1,264 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+enum RoleUser {
+  ADMIN
+  USER
+  STAFF
+}
+
+model User {
+  id             String         @id @default(uuid())
+  email          String         @unique
+  email_verified DateTime?
+  password       String
+  first_name     String
+  last_name      String
+  phone_number   String?
+  birthday       DateTime?      @db.Timestamp()
+  address        String?
+  avatar         String?
+  role_user      RoleUser       @default(USER)
+  password_reset PasswordReset?
+  comment        Comment[]
+  created_at     DateTime       @default(now())
+  updated_at     DateTime       @updatedAt
+  ticket         Ticket[]
+}
+
+model VerificationToken {
+  identifier String   @id
+  token      String   @unique
+  expires    DateTime
+
+  @@unique([identifier, token])
+}
+
+model PasswordReset {
+  id         Int      @id @default(autoincrement())
+  user_id    String   @unique
+  token      String   @unique
+  expires    DateTime
+  created_at DateTime @default(now())
+  updated_at DateTime @updatedAt
+  user       User     @relation(fields: [user_id], references: [id], onDelete: Cascade)
+
+  @@unique([user_id, token])
+}
+
+model Cinema {
+  id           String   @id @default(uuid())
+  name         String
+  phone_number String
+  image        String
+  address      String
+  is_active    Boolean  @default(true)
+  created_at   DateTime @default(now())
+  updated_at   DateTime @updatedAt
+  screen       Screen[]
+}
+
+enum SeatType {
+  NORMAL
+  VIP
+  COUPLE
+}
+
+model Seat {
+  id         String       @id @default(uuid())
+  row        String
+  column     Int
+  is_active  Boolean      @default(true)
+  name       String
+  screen_id  String
+  seat_type  SeatType
+  created_at DateTime     @default(now())
+  updated_at DateTime     @updatedAt
+  screen     Screen       @relation(fields: [screen_id], references: [id])
+  tickets    TicketSeat[]
+}
+
+model Screen {
+  id          String     @id @default(uuid())
+  cinema_id   String
+  name        String
+  column_size Int
+  row_size    Int
+  seats       Seat[]
+  schedule    Schedule[]
+  cinema      Cinema     @relation(fields: [cinema_id], references: [id])
+  created_at  DateTime   @default(now())
+  updated_at  DateTime   @updatedAt
+}
+
+model Movie {
+  id              String        @id @default(uuid())
+  name            String
+  national        String
+  released_date   DateTime      @db.Timestamp()
+  language_movie  String
+  duration        Int
+  limit_age       String
+  brief_movie     String
+  trailer_movie   String
+  is_deleted      Boolean       @default(false)
+  movie_type_id   String
+  movie_format_id String
+  ticket_price    Float
+  created_at      DateTime      @default(now())
+  updated_at      DateTime      @updatedAt
+  movie_image     MovieImage[]
+  comment         Comment[]
+  persons         PersonMovie[]
+  schedule        Schedule[]
+  movie_type      MovieType     @relation(fields: [movie_type_id], references: [id])
+  movie_format    MovieFormat   @relation(fields: [movie_format_id], references: [id])
+}
+
+model MovieType {
+  id         String   @id @default(uuid())
+  name       String
+  created_at DateTime @default(now())
+  updated_at DateTime @updatedAt
+  movie      Movie[]
+}
+
+model MovieFormat {
+  id         String   @id @default(uuid())
+  name       String
+  created_at DateTime @default(now())
+  updated_at DateTime @updatedAt
+  movie      Movie[]
+}
+
+model MovieImage {
+  id         String   @id @default(uuid())
+  path       String
+  movie_id   String
+  created_at DateTime @default(now())
+  updated_at DateTime @updatedAt
+  movie      Movie    @relation(fields: [movie_id], references: [id])
+}
+
+model PersonMovie {
+  id         String   @id @default(uuid())
+  person_id  String
+  movie_id   String
+  created_at DateTime @default(now())
+  updated_at DateTime @updatedAt
+  person     Person   @relation(fields: [person_id], references: [id])
+  movie      Movie    @relation(fields: [movie_id], references: [id])
+
+  @@unique([person_id, movie_id])
+}
+
+enum Position {
+  PRODUCER
+  ACTOR
+}
+
+model Person {
+  id            String        @id @default(uuid())
+  position      Position
+  name          String
+  avatar        String
+  date_of_birth DateTime      @db.Timestamp()
+  biography     String
+  is_deleted    Boolean?      @default(false)
+  created_at    DateTime      @default(now())
+  updated_at    DateTime      @updatedAt
+  movies        PersonMovie[]
+}
+
+model Schedule {
+  id         String   @id @default(uuid())
+  start_time DateTime
+  end_time   DateTime
+  screen_id  String
+  movie_id   String
+  created_at DateTime @default(now())
+  updated_at DateTime @updatedAt
+  screen     Screen   @relation(fields: [screen_id], references: [id])
+  movie      Movie?   @relation(fields: [movie_id], references: [id])
+  ticket     Ticket[]
+}
+
+model Comment {
+  id         String   @id @default(uuid())
+  content    String
+  user_id    String
+  movie_id   String
+  star       Int
+  feeling    String[]
+  image      String[]
+  created_at DateTime @default(now())
+  updated_at DateTime @updatedAt
+  user       User     @relation(fields: [user_id], references: [id])
+  movie      Movie    @relation(fields: [movie_id], references: [id])
+}
+
+model Food {
+  id          String       @id @default(uuid())
+  name        String
+  description String
+  price       Float
+  image       String?
+  is_active   Boolean      @default(true)
+  created_at  DateTime     @default(now())
+  updated_at  DateTime     @updatedAt
+  ticket      Ticket[]
+  tickets     TicketFood[]
+}
+
+enum PaymentStatus {
+  SUCCESS
+  FAILED
+  REFUNDED
+}
+
+model Ticket {
+  id                String        @id @default(uuid())
+  food              Food[]
+  user_id           String
+  schedule_id       String
+  price             Float
+  is_checkin        Boolean       @default(false)
+  payment_status    PaymentStatus
+  payment_intent_id String        @unique
+  created_at        DateTime      @default(now())
+  updated_at        DateTime      @updatedAt
+  canceled_at       DateTime?
+  user              User          @relation(fields: [user_id], references: [id])
+  schedule          Schedule      @relation(fields: [schedule_id], references: [id])
+  seats             TicketSeat[]
+  foods             TicketFood[]
+}
+
+model TicketSeat {
+  id         String   @id @default(uuid())
+  ticket_id  String
+  seat_id    String
+  created_at DateTime @default(now())
+  updated_at DateTime @updatedAt
+  ticket     Ticket   @relation(fields: [ticket_id], references: [id])
+  seat       Seat     @relation(fields: [seat_id], references: [id])
+}
+
+model TicketFood {
+  id         String   @id @default(uuid())
+  ticket_id  String
+  food_id    String
+  created_at DateTime @default(now())
+  updated_at DateTime @updatedAt
+  ticket     Ticket   @relation(fields: [ticket_id], references: [id])
+  food       Food     @relation(fields: [food_id], references: [id])
+}
